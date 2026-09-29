@@ -63,6 +63,15 @@ def pair_for(radar, sweep, center, target, radius, diameter):
                           y[r0:r1, g0:g1], target, radar_pos, radius, diameter)
 
 
+def unfiltered_vrot(radar, sweep, center, target, radius):
+    values = field(radar, sweep, "velocity")
+    if values is None:
+        return None
+    x, y, _, _, _ = geometry(radar, sweep, center)
+    within = np.isfinite(values) & (np.hypot(x-target[0], y-target[1]) <= radius)
+    return float((np.max(values[within]) - np.min(values[within])) / 2) if within.any() else None
+
+
 def matching_moment_sweep(radar, reference, kind, pyart, time_limit=150):
     """Find the nearest same-elevation moment, including legacy split cuts."""
     elevation = float(np.nanmedian(radar.elevation["data"][radar.get_slice(reference)]))
@@ -178,6 +187,7 @@ def main():
             initial, current = ((float((sx-ox)/NM), float((sy-oy)/NM)),
                                 (float((tx-ox)/NM), float((ty-oy)/NM)))
             found = pair_for(radar, sweep, center, current, args.radius_nm, args.max_diameter_nm)
+            raw_vrot = unfiltered_vrot(radar, sweep, center, current, args.radius_nm)
             candidates = []
             for up, angle, up_time in upper:
                 if abs((up_time-t).total_seconds()) > 300: continue
@@ -220,7 +230,7 @@ def main():
                 "source_file": path.name, "sweep": sweep, "elevation_deg": round(elev, 2),
                 "track_lat": round(target[0], 5), "track_lon": round(target[1], 5),
                 "radar_range_nm": round(distance_nm(target, RADARS[station]), 2),
-                "raw_vrot_kt": round(found.raw_vrot, 1) if found else "",
+                "raw_vrot_kt": round(raw_vrot, 1) if raw_vrot is not None else "",
                 "vin_kt": round(found.inbound.velocity, 1) if found else "",
                 "vout_kt": round(found.outbound.velocity, 1) if found else "",
                 "vrot_kt": round(found.vrot, 1) if found else "",

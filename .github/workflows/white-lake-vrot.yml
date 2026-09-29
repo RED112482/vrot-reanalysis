@@ -1,0 +1,43 @@
+name: White Lake Vrot pilot
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Get project files
+        uses: actions/checkout@v4
+
+      - name: Install radar analysis environment
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          environment-file: environment.yml
+          cache-environment: true
+          cache-downloads: false
+
+      - name: Reuse downloaded radar volumes
+        uses: actions/cache@v4
+        with:
+          path: White_Lake_2011-03-09/level2
+          key: white-lake-kmob-20110309-level2-v1
+
+      - name: Analyze tornado and render velocity scans
+        shell: bash -l {0}
+        run: python white_lake_vrot.py
+
+      - name: Upload measurements and radar images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: White-Lake-velocity-results
+          path: |
+            White_Lake_2011-03-09/measurements.csv
+            White_Lake_2011-03-09/*.png
+          if-no-files-found: warn
+          retention-days: 30

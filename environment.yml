@@ -1,0 +1,10 @@
+name: white-lake-vrot
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - arm_pyart
+  - boto3
+  - numpy
+  - scipy
+  - matplotlib

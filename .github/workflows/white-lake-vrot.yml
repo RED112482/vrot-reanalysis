@@ -29,7 +29,9 @@ jobs:
 
       - name: Analyze tornado and render velocity scans
         shell: bash -l {0}
-        run: python white_lake_vrot.py
+        run: |
+          python -m unittest discover -s tests
+          python six_panel_vrot.py
 
       - name: Upload measurements and radar images
         if: always()
